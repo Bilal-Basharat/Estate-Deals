@@ -1,25 +1,26 @@
-import { computed, isRef } from "vue";
+import { computed, toValue } from "vue";
 
+/**
+ * Simple flat-profit payment model:
+ * total cost = price * (1 + rate), spread evenly over the duration.
+ * Accepts refs or plain values for every argument.
+ */
 export const useMonthlyPayments = (total, profitRate, duration) => {
-  
     const monthlyPayment = computed(() => {
-  
-    const propertyPrice = isRef(total) ? total.value : total;
-    const decProfitRate = (isRef(profitRate) ? profitRate.value : profitRate) / 100;
-    const numberOfPaymentMonths = (isRef(duration) ? duration.value : duration) * 12;
+        const price = Number(toValue(total)) || 0;
+        const rate = (Number(toValue(profitRate)) || 0) / 100;
+        const months = (Number(toValue(duration)) || 1) * 12;
 
-    const totalCost = propertyPrice * (1 + decProfitRate);
+        return (price * (1 + rate)) / months;
+    });
 
-    return totalCost / numberOfPaymentMonths;
-})
+    const totalPaid = computed(
+        () => (Number(toValue(duration)) || 0) * 12 * monthlyPayment.value
+    );
 
-const totalPaid = computed(() => {
-    return (isRef(duration) ? duration.value : duration) * 12 * monthlyPayment.value
-})
+    const totalProfit = computed(
+        () => totalPaid.value - (Number(toValue(total)) || 0)
+    );
 
-const totalProfit = computed(() => {
-    return totalPaid.value - (isRef(total) ? total.value  : total); 
-})
-
-return {monthlyPayment, totalPaid, totalProfit}
-}
+    return { monthlyPayment, totalPaid, totalProfit };
+};

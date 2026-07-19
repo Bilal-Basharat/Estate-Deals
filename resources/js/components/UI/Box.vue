@@ -1,7 +1,6 @@
 <template>
-
-    <div class="border border-gray-200 rounded-md shadow-sm p-4 dark:border-gray-800 dark:text-gray-200 ">
-        <div class="text-gray-500 font-medium">
+    <div class="card p-5">
+        <div v-if="$slots.header" class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             <slot name="header" />
         </div>
         <slot />

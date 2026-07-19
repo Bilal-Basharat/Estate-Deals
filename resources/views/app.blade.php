@@ -4,11 +4,11 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>Laravel</title>
+        <title>EstateSphere</title>
         @vite('resources/js/app.js')
         @inertiaHead
     </head>
-    <body class="bg-white text-gray-800 dark:bg-gray-900 dark:text-gray-300">
+    <body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
         @inertia
     </body>
 </html>
