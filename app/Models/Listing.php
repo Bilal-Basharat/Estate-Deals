@@ -34,17 +34,17 @@ class Listing extends Model
     {
         return $query->orderByDesc('created_at');
     }
-/** @param \Illuminate\Database\Eloquent\Builder $query */
-    public function scopeFilter(Builder $query, array $filters):Builder 
+    /** @param \Illuminate\Database\Eloquent\Builder $query */
+    public function scopeFilter(Builder $query, array $filters): Builder
     {
         return $query->when($filters['priceFrom'] ?? false, function ($query, $value) {
             $query->where('price', '>=', $value);
         })->when($filters['priceTo'] ?? false, function ($query, $value) {
             $query->where('price', '<=', $value);
         })->when($filters['beds'] ?? false, function ($query, $value) {
-            $query->where('beds', $value < 6 ? '=' : '>=' ,  (int)$value);
+            $query->where('beds', $value < 6 ? '=' : '>=',  (int)$value);
         })->when($filters['baths'] ?? false, function ($query, $value) {
-            $query->where('baths',$value < 6 ? '=' : '>=' , (int)$value);
+            $query->where('baths', $value < 6 ? '=' : '>=', (int)$value);
         })->when($filters['areaFrom'] ?? false, function ($query, $value) {
             $query->where('area', '>=', $value);
         })->when($filters['areaTo'] ?? false, function ($query, $value) {
@@ -53,7 +53,12 @@ class Listing extends Model
             $query->withTrashed();
         })->when($filters['by'] ?? false, function ($query, $value) {
             !in_array($value, $this->sortable) ? $query :
-            $query->orderBy($value, $filters['order'] ?? 'desc');
+                $query->orderBy($value, $filters['order'] ?? 'desc');
+        })->when($filters['city'] ?? false, function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->where('city', 'like', "%{$value}%")
+                    ->orWhere('street', 'like', "%{$value}%");
+            });
         });
     }
 
