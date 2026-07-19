@@ -1,6 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
@@ -15,119 +14,134 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\RealtorListingController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\UserAccountController;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
-Route::get('/', [IndexController::class, 'index']);
+/*
+|--------------------------------------------------------------------------
+| Public
+|--------------------------------------------------------------------------
+| Home page and the public listing catalogue. Browsable by anyone;
+| the pages adapt their content when a user is authenticated.
+*/
 
+Route::get('/', [IndexController::class, 'index'])
+    ->name('home');
 
-//routes for diapling listing
 Route::resource('listing', ListingController::class)
-->only(['index', 'show']);
+    ->only(['index', 'show']);
 
+/*
+|--------------------------------------------------------------------------
+| Guest only — authentication
+|--------------------------------------------------------------------------
+| Login, registration, and the password reset flow. All of these are
+| meaningless for an authenticated user, hence the guest middleware.
+| (Login/registration were previously unguarded; guest adds the
+| standard redirect-if-authenticated behavior.)
+*/
 
-//routes for login logout
-Route::get('login', [AuthController::class, 'create'])->name('login');
-Route::post('login', [AuthController::class, 'store']);
-Route::post('logout', [AuthController::class, 'destroy'])->name('logout');
+Route::middleware('guest')->group(function () {
+    // Login
+    Route::get('login', [AuthController::class, 'create'])->name('login');
+    Route::post('login', [AuthController::class, 'store']);
 
-//route for registering user account
-Route::resource('user-account', UserAccountController::class)->only(['create', 'store']);
+    // Registration
+    Route::resource('user-account', UserAccountController::class)
+        ->only(['create', 'store']);
 
-//route for account email verification notice
-Route::get('email/verify', function() {
-    return inertia('Auth/VerifyEmail');
-})->middleware('auth')->name('verification.notice');
-
-//route for sending email verification
-Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-    $request->fulfill();
-
-    return redirect()->route('listing.index')->with([
-        'success' => true,
-        'message' => 'Account verified successfully'
-    ]);
-})->middleware(['auth', 'signed'])->name('verification.verify');
-
-//route for resending the email verification notification
-Route::post('/email/verification-notification', function (Request $request) {
-    $request->user()->sendEmailVerificationNotification();
-
-    return back()->with('message', 'Verification link sent!');
-})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
-
-//routes for the listing CRUD belonging to the author and showing the offers belonging to one of the listings
-Route::prefix('realtor')
-->name('realtor.')
-->middleware(['auth', 'verified'])
-->group(function () {
-    Route::name('listing.restore')->put('listing/{listing}/restore', [RealtorListingController::class, 'restore'])->withTrashed();
-    Route::resource('listing', RealtorListingController::class)
-    ->only(['index', 'show', 'create', 'store', 'edit', 'update', 'destroy'])->withTrashed();
-
-    Route::name('offer.accept')->put('offer/{offer}/accept', ListingOfferAcceptController::class);
-    
-    Route::resource('listing.image', ListingImageController::class)
-    ->only(['create', 'store', 'destroy']);
+    // Password reset
+    Route::get('forgot-password', [ForgotPasswordController::class, 'create'])
+        ->name('password.request');
+    Route::post('forgot-password', [ForgotPasswordController::class, 'store'])
+        ->name('password.email');
+    Route::get('reset-password/{token}', [ResetPasswordController::class, 'create'])
+        ->name('password.reset');
+    Route::post('reset-password', [ResetPasswordController::class, 'store'])
+        ->name('password.update');
 });
 
-//route for making offer to a listing
-Route::resource('listing.offer', ListingOfferController::class)
-->middleware('auth')
-->only(['store']);
-
-//route for showing offer notification for a listing
-Route::resource('notification', NotificationController::class)
-->middleware('auth')
-->only(['index']);
-
-//route for marking notification as read
-Route::put('notification/{notification}/mark', NotificiationMarkController::class)
-->middleware('auth')
-->name('notification.mark');
-
-// //forgot password routes
-// Route::resource('/forgot-password', ForgotPasswordController::class)
-// ->middleware('guest')
-// ->only(['create', 'store']);
-
-// //reset password routes
-// Route::resource('/reset-password', ResetPasswordController::class)
-// ->middleware('guest')
-// ->only(['create', 'store'])
-// ->parameters([
-//     'reset-password' => 'token'
-// ]);
-
-// Password reset routes
-Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])
-    ->middleware('guest')
-    ->name('password.request'); // This name is expected by Laravel
-
-Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])
-    ->middleware('guest')
-    ->name('password.email'); // Expected name for sending reset link
-
-Route::get('/reset-password/{token}', [ResetPasswordController::class, 'create'])
-    ->middleware('guest')
-    ->name('password.reset'); // This is the missing route
-
-Route::post('/reset-password', [ResetPasswordController::class, 'store'])
-    ->middleware('guest')
-    ->name('password.update');
-    
-
-//purchase and sale routes for the user to see their purchases and sales
-Route::get('purchases', PurchaseController::class)
+Route::post('logout', [AuthController::class, 'destroy'])
     ->middleware('auth')
-    ->name('purchases');
+    ->name('logout');
 
-Route::get('sales', SaleController::class)
-    ->middleware('auth')
-    ->name('sales');
+/*
+|--------------------------------------------------------------------------
+| Email verification
+|--------------------------------------------------------------------------
+| Realtor features require a verified address. Notice page, the signed
+| verification link, and the throttled resend action.
+*/
 
+Route::middleware('auth')->group(function () {
+    Route::get('email/verify', fn () => inertia('Auth/VerifyEmail'))
+        ->name('verification.notice');
 
-// Route::get('password/reset', [AuthController::class, 'showLinkRequestForm'])->name('password.request');
-// Route::post('password/email', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
-// Route::get('password/reset/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
-// Route::post('password/reset', [AuthController::class, 'reset'])->name('password.update');
+    Route::get('email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+
+        return redirect()->route('listing.index')->with([
+            'success' => true,
+            'message' => 'Account verified successfully',
+        ]);
+    })->middleware('signed')->name('verification.verify');
+
+    Route::post('email/verification-notification', function (Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+
+        return back()->with('message', 'Verification link sent!');
+    })->middleware('throttle:6,1')->name('verification.send');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Authenticated — buyer actions & account
+|--------------------------------------------------------------------------
+| Making offers, notifications, and the user's transaction history.
+*/
+
+Route::middleware('auth')->group(function () {
+    // Offers on listings
+    Route::resource('listing.offer', ListingOfferController::class)
+        ->only(['store']);
+
+    // Notifications
+    Route::resource('notification', NotificationController::class)
+        ->only(['index']);
+    Route::put('notification/{notification}/mark', NotificiationMarkController::class)
+        ->name('notification.mark');
+
+    // Transaction history
+    Route::get('purchases', PurchaseController::class)->name('purchases');
+    Route::get('sales', SaleController::class)->name('sales');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Realtor — listing management
+|--------------------------------------------------------------------------
+| Requires a verified account. CRUD for the user's own listings
+| (including soft-deleted ones), photo management, and accepting offers.
+*/
+
+Route::prefix('realtor')
+    ->name('realtor.')
+    ->middleware(['auth', 'verified'])
+    ->group(function () {
+        // Restore must be declared before the resource so the /restore
+        // segment isn't captured by the resource's {listing} routes.
+        Route::put('listing/{listing}/restore', [RealtorListingController::class, 'restore'])
+            ->withTrashed()
+            ->name('listing.restore');
+
+        Route::resource('listing', RealtorListingController::class)
+            ->only(['index', 'show', 'create', 'store', 'edit', 'update', 'destroy'])
+            ->withTrashed();
+
+        Route::resource('listing.image', ListingImageController::class)
+            ->only(['create', 'store', 'destroy']);
+
+        Route::put('offer/{offer}/accept', ListingOfferAcceptController::class)
+            ->name('offer.accept');
+    });
