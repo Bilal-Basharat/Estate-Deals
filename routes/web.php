@@ -11,13 +11,14 @@ use App\Http\Controllers\ListingOfferAcceptController;
 use App\Http\Controllers\ListingOfferController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NotificiationMarkController;
+use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\RealtorListingController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\UserAccountController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 
 Route::get('/', [IndexController::class, 'index']);
-Route::get('/hello', [IndexController::class, 'show']);
 
 
 //routes for diapling listing
@@ -115,6 +116,17 @@ Route::post('/reset-password', [ResetPasswordController::class, 'store'])
     ->middleware('guest')
     ->name('password.update');
     
+
+//purchase and sale routes for the user to see their purchases and sales
+Route::get('purchases', PurchaseController::class)
+    ->middleware('auth')
+    ->name('purchases');
+
+Route::get('sales', SaleController::class)
+    ->middleware('auth')
+    ->name('sales');
+
+
 // Route::get('password/reset', [AuthController::class, 'showLinkRequestForm'])->name('password.request');
 // Route::post('password/email', [AuthController::class, 'sendResetLinkEmail'])->name('password.email');
 // Route::get('password/reset/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');

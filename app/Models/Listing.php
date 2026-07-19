@@ -76,4 +76,8 @@ class Listing extends Model
     {
         return $query->whereNull('sold_at');
     }
+    public function acceptedOffer()
+    {
+        return $this->hasOne(Offer::class)->whereNotNull('accepted_at');
+    }
 }

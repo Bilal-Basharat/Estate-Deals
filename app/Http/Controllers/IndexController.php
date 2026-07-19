@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Auth;
 
 class IndexController extends Controller
 {
-    function index(){
+    function index()
+    {
         $user = Auth::user();
 
         return inertia('Index/Index', [
@@ -30,10 +31,12 @@ class IndexController extends Controller
 
             // Personal snapshot - null for guests, so the page can branch.
             'snapshot' => $user ? [
+                'purchases' => Offer::byMe()->whereNotNull('accepted_at')->count(),
+                'sales' => $user->listings()->withTrashed()->whereNotNull('sold_at')->count(),
                 'activeListings' => $user->listings()->whereNull('sold_at')->count(),
                 'offersReceived' => Offer::whereNull('accepted_at')
                     ->whereNull('rejected_at')
-                    ->whereHas('listing', fn ($query) => $query->where('user_id', $user->id))
+                    ->whereHas('listing', fn($query) => $query->where('user_id', $user->id))
                     ->count(),
                 'offersMade' => Offer::byMe()
                     ->whereNull('accepted_at')
@@ -41,9 +44,10 @@ class IndexController extends Controller
                     ->count(),
             ] : null,
         ]);
-    }   
+    }
 
-    function show(){
-        return inertia('Index/Show'); 
+    function show()
+    {
+        return inertia('Index/Show');
     }
 }

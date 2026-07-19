@@ -13,7 +13,6 @@
                 an offer directly to the owner.
             </p>
 
-            <!-- Hero search -->
             <form class="mx-auto mt-8 flex max-w-xl gap-2" @submit.prevent="search">
                 <div class="relative flex-1">
                     <svg class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -44,7 +43,6 @@
             </div>
         </section>
 
-        <!-- Value props -->
         <section class="mx-auto grid max-w-4xl gap-4 pb-12 sm:grid-cols-3">
             <div class="card p-5">
                 <div class="text-sm font-semibold">Transparent pricing</div>
@@ -77,8 +75,12 @@
                 Here's where things stand.
             </p>
 
-            <!-- Snapshot cards double as navigation -->
-            <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <!--
+                Snapshot cards ARE the navigation on this page. No quick-action
+                buttons: Browse / New listing / Notifications already live in
+                the header on this same screen.
+            -->
+            <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                 <Link
                     href="/realtor/listing"
                     class="card p-4 transition-shadow hover:shadow-md"
@@ -112,13 +114,22 @@
                         Offers you've made as a buyer
                     </div>
                 </div>
-            </div>
 
-            <!-- Quick actions -->
-            <div class="mt-4 flex flex-wrap gap-2">
-                <Link href="/listing" class="btn-primary btn-sm">Browse listings</Link>
-                <Link href="/realtor/listing/create" class="btn-outline btn-sm">+ New listing</Link>
-                <Link href="/notification" class="btn-outline btn-sm">Notifications</Link>
+                <Link href="/purchases" class="card p-4 transition-shadow hover:shadow-md">
+                    <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Properties bought
+                    </div>
+                    <div class="mt-1 text-2xl font-bold">{{ snapshot.purchases }}</div>
+                    <div class="mt-1 text-xs text-gray-400 dark:text-gray-500">View purchase history →</div>
+                </Link>
+
+                <Link href="/sales" class="card p-4 transition-shadow hover:shadow-md">
+                    <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                        Properties sold
+                    </div>
+                    <div class="mt-1 text-2xl font-bold">{{ snapshot.sales }}</div>
+                    <div class="mt-1 text-xs text-gray-400 dark:text-gray-500">View sales history →</div>
+                </Link>
             </div>
         </section>
     </template>
