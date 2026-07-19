@@ -6,6 +6,7 @@ use App\Models\Listing;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Offer;
 
 class RealtorListingController extends Controller
 {
@@ -20,35 +21,60 @@ class RealtorListingController extends Controller
             ...$request->only(['by', 'order'])
         ];
 
+        $user = Auth::user();
+
         return inertia('Realtor/Index', [
-            // 'filters' =>  
-            'listings' => Auth::user()
-                ->listings()
+            'filters' => $filters,
+            'stats' => [
+                'activeListings' => $user->listings()->whereNull('sold_at')->count(),
+                'soldListings' => $user->listings()->whereNotNull('sold_at')->count(),
+                'soldValue' => (int) $user->listings()->whereNotNull('sold_at')->sum('price'),
+                'pendingOffers' => Offer::whereNull('accepted_at')
+                    ->whereNull('rejected_at')
+                    ->whereHas('listing', fn($query) => $query->where('user_id', $user->id))
+                    ->count(),
+            ],
+            'listings' => $user->listings()
                 ->filter($filters)
+                ->with('images')
                 ->withCount('images')
                 ->withCount('offers')
+                ->withCount(['offers as pending_offers_count' => fn($query) => $query
+                    ->whereNull('accepted_at')
+                    ->whereNull('rejected_at')])
                 ->paginate(10)
                 ->withQueryString(),
         ]);
+
+        // return inertia('Realtor/Index', [
+        //     // 'filters' =>  
+        //     'listings' => Auth::user()
+        //         ->listings()
+        //         ->filter($filters)
+        //         ->withCount('images')
+        //         ->withCount('offers')
+        //         ->paginate(10)
+        //         ->withQueryString(),
+        // ]);
     }
 
     public function show(Listing $listing)
     {
-        try{
-        $this->authorize('viewAsRealtor', $listing);
+        try {
+            $this->authorize('viewAsRealtor', $listing);
 
-        $listing->load(['images', 'offers', 'offers.bidder']);
+            $listing->load(['images', 'offers', 'offers.bidder']);
 
-        return inertia("Realtor/Show", [
-            'listing' => $listing,
-            'offer' => $listing->load('offers', 'offers.bidder')
-        ]);
-    }catch(Exception $ex){
-        return redirect()->back()->with([
-            'success' => false,
-            'error' => 'only the authorized user can view this listing'
-        ]);
-    }
+            return inertia("Realtor/Show", [
+                'listing' => $listing,
+                'offer' => $listing->load('offers', 'offers.bidder')
+            ]);
+        } catch (Exception $ex) {
+            return redirect()->back()->with([
+                'success' => false,
+                'error' => 'only the authorized user can view this listing'
+            ]);
+        }
     }
 
     /**

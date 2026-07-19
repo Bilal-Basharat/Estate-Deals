@@ -1,67 +1,70 @@
 <template>
-    <form>
-        <div class="mb-4 mt-4 flex flex-wrap gap-2">
-            <div class="flex flex-nowrap items-center gap-2">
-                <input id="deleted" v-model="filterForm.deleted" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-                <label for="deleteds" class=""> Deleted </label>
-            </div>
+    <div class="card flex flex-wrap items-center justify-between gap-4 p-4">
+        <label class="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+                v-model="filterForm.deleted"
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 dark:border-gray-600 dark:bg-gray-800"
+            />
+            Include deleted listings
+        </label>
 
-            <div class="flex flex-nowrap items-center gap-2">
-                <select class="input-left" v-model="filterForm.by">
-                    <option value="created_at"> Added </option>
-                    <option value="price"> Price </option>
+        <div class="flex items-center gap-2">
+            <label for="sort-by" class="text-sm text-gray-500 dark:text-gray-400">Sort by</label>
+            <div class="flex">
+                <select id="sort-by" v-model="filterForm.by" class="input-left w-32">
+                    <option value="created_at">Date added</option>
+                    <option value="price">Price</option>
                 </select>
-                <select class="input-right" v-model="filterForm.order">
-                    <option v-for="option in sortOptions" :key="option.value" :value="option.value"> {{ option.label }} </option> 
+                <select v-model="filterForm.order" class="input-right w-36" aria-label="Sort order">
+                    <option
+                        v-for="option in sortOptions"
+                        :key="option.value"
+                        :value="option.value"
+                    >
+                        {{ option.label }}
+                    </option>
                 </select>
             </div>
         </div>
-    </form>
+    </div>
 </template>
 
 <script setup>
+import { reactive, watch, computed } from "vue";
+import { router } from "@inertiajs/vue3";
+import { debounce } from "lodash-es";
 
-import { reactive, watch, computed } from 'vue';
-import { router } from '@inertiajs/vue3';
-import {debounce} from 'lodash';
+const props = defineProps({
+    filters: Object,
+});
+
 const filterForm = reactive({
-    deleted: false,
-    by: 'created_at',
-    order: 'desc'
-})
+    deleted: Boolean(props.filters?.deleted),
+    by: props.filters?.by ?? "created_at",
+    order: props.filters?.order ?? "desc",
+});
 
-
-watch(filterForm, debounce(() => 
-    router.get('/realtor/listing', filterForm, {
-        preserveState: true,
-        preserveScroll: true,
-    })), 1000);
+watch(
+    filterForm,
+    debounce(() => {
+        router.get("/realtor/listing", filterForm, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    }, 400)
+);
 
 const sortLabels = {
-    created_at : [
-        {
-            label: 'Latest',
-            value: 'desc'
-        },
-        {
-            label: 'Oldest',
-            value: 'asc'
-        }
+    created_at: [
+        { label: "Newest first", value: "desc" },
+        { label: "Oldest first", value: "asc" },
     ],
     price: [
-        {
-            label: 'Pricey',
-            value: 'desc'
-        },
-        {
-            label: 'Cheapest',
-            value: 'asc'
-        }
-    ]
-    }
+        { label: "Highest price", value: "desc" },
+        { label: "Lowest price", value: "asc" },
+    ],
+};
 
-    const sortOptions = computed(() => 
-         sortLabels[filterForm.by]
-    )
-
+const sortOptions = computed(() => sortLabels[filterForm.by]);
 </script>
